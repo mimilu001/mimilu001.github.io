@@ -1,0 +1,2793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习助手 - 高效刷题与记忆</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- 统一的 Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6', // 专注蓝
+                        secondary: '#f97316', // 活力橙
+                        dark: '#1e3a8a',
+                        light: '#eff6ff',
+                        success: '#22c55e',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        info: '#0ea5e9'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'flip': 'flip 0.6s ease-in-out',
+                        'slide-in': 'slideIn 0.3s ease-out',
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                    },
+                    keyframes: {
+                        flip: {
+                            '0%': { transform: 'rotateY(0deg)' },
+                            '100%': { transform: 'rotateY(180deg)' },
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateX(-100%)' },
+                            '100%': { transform: 'translateX(0)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-flip {
+                perspective: 1000px;
+            }
+            .card-inner {
+                transition: transform 0.6s;
+                transform-style: preserve-3d;
+            }
+            .card-flip:hover .card-inner {
+                transform: rotateY(180deg);
+            }
+            .card-front, .card-back {
+                backface-visibility: hidden;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+            }
+            .card-back {
+                transform: rotateY(180deg);
+            }
+            .progress-ring-circle {
+                transition: stroke-dashoffset 0.35s;
+                transform: rotate(-90deg);
+                transform-origin: 50% 50%;
+            }
+            .glass-effect {
+                background: rgba(255, 255, 255, 0.25);
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- 加载动画 -->
+    <div id="loading" class="fixed inset-0 flex items-center justify-center bg-white z-50">
+        <div class="flex flex-col items-center">
+            <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <p class="mt-4 text-lg font-medium text-primary">加载中...</p>
+        </div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- 侧边导航栏 -->
+        <aside id="sidebar" class="w-64 bg-white shadow-lg hidden md:block transition-all duration-300 ease-in-out">
+            <div class="p-4 flex items-center border-b">
+                <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/0be93eb87d1f430583ab1e29227df09e~tplv-a9rns2rl98-image.image?rcl=20251215204503464D9CF29ECA7715771A&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1768394737&x-signature=ambiqWkRjOtOU8rZdE9zqEne108%3D" alt="学习助手" class="w-10 h-10">
+                <h1 class="ml-3 text-xl font-bold text-dark">学习助手</h1>
+            </div>
+            <nav class="mt-4">
+                <ul>
+                    <li>
+                        <a href="#dashboard" class="flex items-center px-6 py-3 text-gray-700 hover:bg-primary hover:text-white transition-colors duration-200 nav-link active" data-target="dashboard">
+                            <i class="fa fa-dashboard w-5 h-5 mr-3"></i>
+                            <span>学习概览</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#questions" class="flex items-center px-6 py-3 text-gray-700 hover:bg-primary hover:text-white transition-colors duration-200 nav-link" data-target="questions">
+                            <i class="fa fa-list-alt w-5 h-5 mr-3"></i>
+                            <span>题库管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#quiz" class="flex items-center px-6 py-3 text-gray-700 hover:bg-primary hover:text-white transition-colors duration-200 nav-link" data-target="quiz">
+                            <i class="fa fa-check-square-o w-5 h-5 mr-3"></i>
+                            <span>刷题中心</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#flashcards" class="flex items-center px-6 py-3 text-gray-700 hover:bg-primary hover:text-white transition-colors duration-200 nav-link" data-target="flashcards">
+                            <i class="fa fa-clone w-5 h-5 mr-3"></i>
+                            <span>闪卡学习</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#favorites" class="flex items-center px-6 py-3 text-gray-700 hover:bg-primary hover:text-white transition-colors duration-200 nav-link" data-target="favorites">
+                            <i class="fa fa-star w-5 h-5 mr-3"></i>
+                            <span>收藏题目</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#wrong-questions" class="flex items-center px-6 py-3 text-gray-700 hover:bg-primary hover:text-white transition-colors duration-200 nav-link" data-target="wrong-questions">
+                            <i class="fa fa-exclamation-triangle w-5 h-5 mr-3"></i>
+                            <span>错题集</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#analysis" class="flex items-center px-6 py-3 text-gray-700 hover:bg-primary hover:text-white transition-colors duration-200 nav-link" data-target="analysis">
+                            <i class="fa fa-bar-chart w-5 h-5 mr-3"></i>
+                            <span>学习分析</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="absolute bottom-0 w-64 p-4 border-t">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
+                        <i class="fa fa-user"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-700">学习者</p>
+                        <p class="text-xs text-gray-500">个人中心</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- 顶部导航栏 -->
+            <header class="bg-white shadow-sm z-10">
+                <div class="flex items-center justify-between p-4">
+                    <div class="flex items-center">
+                        <button id="sidebar-toggle" class="md:hidden text-gray-600 focus:outline-none">
+                            <i class="fa fa-bars text-xl"></i>
+                        </button>
+                        <h2 id="page-title" class="ml-4 text-xl font-semibold text-gray-800">学习概览</h2>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <span class="text-sm text-gray-600">今日学习</span>
+                            <div class="flex items-center mt-1">
+                                <i class="fa fa-clock-o text-primary mr-2"></i>
+                                <span id="today-study-time" class="font-medium">0分钟</span>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <button class="text-gray-600 focus:outline-none">
+                                <i class="fa fa-bell text-xl"></i>
+                                <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 内容区域 -->
+            <main class="flex-1 overflow-y-auto bg-gray-50 p-6">
+                <!-- 学习概览 -->
+                <section id="dashboard" class="page-section active">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <!-- 总学习时间 -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">总学习时间</p>
+                                    <p id="total-study-time" class="text-2xl font-bold text-gray-800 mt-1">0小时</p>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fa fa-clock-o text-primary text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex items-center">
+                                    <span class="text-xs text-gray-500">本周增长</span>
+                                    <span class="ml-2 text-xs font-medium text-green-600">+12.5%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 65%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 已完成题目 -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">已完成题目</p>
+                                    <p id="completed-questions" class="text-2xl font-bold text-gray-800 mt-1">0题</p>
+                                </div>
+                                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                    <i class="fa fa-check-circle text-success text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex items-center">
+                                    <span class="text-xs text-gray-500">正确率</span>
+                                    <span id="correct-rate" class="ml-2 text-xs font-medium text-green-600">0%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                    <div class="bg-success h-2 rounded-full" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 收藏题目 -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">收藏题目</p>
+                                    <p id="favorite-questions" class="text-2xl font-bold text-gray-800 mt-1">0题</p>
+                                </div>
+                                <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <i class="fa fa-star text-warning text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex items-center">
+                                    <span class="text-xs text-gray-500">本周新增</span>
+                                    <span id="new-favorites" class="ml-2 text-xs font-medium text-yellow-600">0题</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                    <div class="bg-warning h-2 rounded-full" style="width: 30%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 错题数量 -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">错题数量</p>
+                                    <p id="wrong-questions-count" class="text-2xl font-bold text-gray-800 mt-1">0题</p>
+                                </div>
+                                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                                    <i class="fa fa-exclamation-triangle text-danger text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex items-center">
+                                    <span class="text-xs text-gray-500">待复习</span>
+                                    <span id="pending-review" class="ml-2 text-xs font-medium text-red-600">0题</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                    <div class="bg-danger h-2 rounded-full" style="width: 45%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 学习进度图表 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">学习时间趋势</h3>
+                            <div class="h-64">
+                                <canvas id="study-time-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">知识点掌握情况</h3>
+                            <div class="h-64">
+                                <canvas id="knowledge-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AI推荐 -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">AI智能推荐</h3>
+                            <span class="text-xs text-gray-500">基于你的学习数据</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="ai-recommendations">
+                            <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div class="flex items-center mb-2">
+                                    <span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">薄弱知识点</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800">JavaScript闭包</h4>
+                                <p class="text-sm text-gray-600 mt-1">建议复习相关题目，加强理解</p>
+                                <button class="mt-3 px-3 py-1 bg-primary text-white text-sm rounded hover:bg-blue-600 transition-colors">开始学习</button>
+                            </div>
+                            <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div class="flex items-center mb-2">
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">推荐题目</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800">数据结构 - 二叉树</h4>
+                                <p class="text-sm text-gray-600 mt-1">根据你的学习进度推荐</p>
+                                <button class="mt-3 px-3 py-1 bg-primary text-white text-sm rounded hover:bg-blue-600 transition-colors">开始学习</button>
+                            </div>
+                            <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div class="flex items-center mb-2">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">复习提醒</span>
+                                </div>
+                                <h4 class="font-medium text-gray-800">CSS布局技巧</h4>
+                                <p class="text-sm text-gray-600 mt-1">已超过3天未复习，建议回顾</p>
+                                <button class="mt-3 px-3 py-1 bg-primary text-white text-sm rounded hover:bg-blue-600 transition-colors">开始复习</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 题库管理 -->
+                <section id="questions" class="page-section hidden">
+                    <div class="bg-white rounded-lg shadow mb-6">
+                        <div class="p-6 border-b">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-800">题库管理</h3>
+                                <button id="add-question-btn" class="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600 transition-colors">
+                                    <i class="fa fa-plus mr-2"></i>添加题目
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex flex-wrap items-center justify-between mb-4">
+                                <div class="flex items-center space-x-2 mb-2 sm:mb-0">
+                                    <div class="relative">
+                                        <input type="text" placeholder="搜索题目..." class="w-64 pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <i class="fa fa-search absolute left-3 top-3 text-gray-400"></i>
+                                    </div>
+                                    <select class="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <option value="">所有分类</option>
+                                        <option value="javascript">JavaScript</option>
+                                        <option value="css">CSS</option>
+                                        <option value="html">HTML</option>
+                                        <option value="react">React</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="px-3 py-2 border rounded-lg hover:bg-gray-100 transition-colors">
+                                        <i class="fa fa-filter mr-1"></i>筛选
+                                    </button>
+                                    <button class="px-3 py-2 border rounded-lg hover:bg-gray-100 transition-colors">
+                                        <i class="fa fa-download mr-1"></i>导出
+                                    </button>
+                                    <div class="relative">
+                                        <button id="import-btn" class="px-3 py-2 border rounded-lg hover:bg-gray-100 transition-colors">
+                                            <i class="fa fa-upload mr-1"></i>导入
+                                        </button>
+                                        <input type="file" id="file-import" accept=".pdf,.txt,.json" class="absolute inset-0 opacity-0 cursor-pointer" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead>
+                                        <tr>
+                                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">题目</th>
+                                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">分类</th>
+                                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">难度</th>
+                                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">正确率</th>
+                                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200" id="questions-table-body">
+                                        <!-- 题目列表将通过JavaScript动态生成 -->
+                                        <tr>
+                                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">暂无题目，请添加</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="flex items-center justify-between mt-6">
+                                <div class="text-sm text-gray-500">
+                                    显示 <span class="font-medium">0</span> 到 <span class="font-medium">0</span> 共 <span class="font-medium">0</span> 条
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="px-3 py-1 border rounded disabled:opacity-50">上一页</button>
+                                    <button class="px-3 py-1 border rounded bg-primary text-white">1</button>
+                                    <button class="px-3 py-1 border rounded disabled:opacity-50">下一页</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 刷题中心 -->
+                <section id="quiz" class="page-section hidden">
+                    <div class="bg-white rounded-lg shadow p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">刷题设置</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">选择分类</label>
+                                <select id="quiz-category" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <option value="all">所有分类</option>
+                                    <option value="javascript">JavaScript</option>
+                                    <option value="css">CSS</option>
+                                    <option value="html">HTML</option>
+                                    <option value="react">React</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">题目数量</label>
+                                <input type="number" id="quiz-count" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" value="10" min="1" max="50">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">难度选择</label>
+                                <select id="quiz-difficulty" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <option value="all">所有难度</option>
+                                    <option value="1">简单</option>
+                                    <option value="2">中等</option>
+                                    <option value="3">困难</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex justify-end">
+                            <button id="start-quiz-btn" class="px-6 py-2 bg-primary text-white rounded hover:bg-blue-600 transition-colors">
+                                开始刷题
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 刷题界面 -->
+                    <div id="quiz-container" class="hidden">
+                        <div class="bg-white rounded-lg shadow p-6 mb-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-sm font-medium text-gray-600">题目 <span id="current-question">1</span>/<span id="total-questions">10</span></span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fa fa-clock-o text-primary mr-2"></i>
+                                    <span id="quiz-timer" class="font-medium">00:00</span>
+                                </div>
+                            </div>
+                            <div id="question-container" class="mb-6">
+                                <h4 id="question-text" class="text-lg font-medium text-gray-800 mb-4">题目内容将显示在这里</h4>
+                                <div id="options-container" class="space-y-3">
+                                    <!-- 选项将通过JavaScript动态生成 -->
+                                </div>
+                            </div>
+                            <div id="explanation-container" class="hidden mb-6 p-4 bg-blue-50 rounded-lg">
+                                <h5 class="font-medium text-gray-800 mb-2">解析</h5>
+                                <p id="explanation-text" class="text-gray-700"></p>
+                            </div>
+                            <div class="flex justify-between">
+                                <button id="prev-question-btn" class="px-4 py-2 border rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50">
+                                    上一题
+                                </button>
+                                <button id="submit-answer-btn" class="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600 transition-colors">
+                                    提交答案
+                                </button>
+                                <button id="next-question-btn" class="px-4 py-2 border rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50">
+                                    下一题
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 刷题结果 -->
+                    <div id="quiz-result" class="hidden">
+                        <div class="bg-white rounded-lg shadow p-6 text-center">
+                            <div class="w-24 h-24 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                                <i class="fa fa-check text-primary text-4xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-800 mb-2">测试完成！</h3>
+                            <p class="text-gray-600 mb-6">你的成绩如下：</p>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                <div>
+                                    <p class="text-sm text-gray-500">总题数</p>
+                                    <p id="result-total" class="text-2xl font-bold text-gray-800">10</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">正确</p>
+                                    <p id="result-correct" class="text-2xl font-bold text-green-600">0</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">错误</p>
+                                    <p id="result-wrong" class="text-2xl font-bold text-red-600">0</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">正确率</p>
+                                    <p id="result-rate" class="text-2xl font-bold text-primary">0%</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-center space-x-4">
+                                <button id="review-answers-btn" class="px-4 py-2 border rounded-lg hover:bg-gray-100 transition-colors">
+                                    查看答案
+                                </button>
+                                <button id="restart-quiz-btn" class="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600 transition-colors">
+                                    重新测试
+                                </button>
+                                <button id="back-to-quiz-btn" class="px-4 py-2 bg-secondary text-white rounded hover:bg-orange-600 transition-colors">
+                                    返回设置
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 闪卡学习 -->
+                <section id="flashcards" class="page-section hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2">
+                            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                                <div class="flex items-center justify-between mb-6">
+                                    <h3 class="text-lg font-semibold text-gray-800">闪卡学习</h3>
+                                    <div class="flex items-center space-x-2">
+                                        <select id="flashcard-category" class="border rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="all">所有分类</option>
+                                            <option value="javascript">JavaScript</option>
+                                            <option value="css">CSS</option>
+                                            <option value="html">HTML</option>
+                                            <option value="react">React</option>
+                                        </select>
+                                        <button id="add-flashcard-btn" class="px-3 py-1 bg-primary text-white rounded hover:bg-blue-600 transition-colors">
+                                            <i class="fa fa-plus mr-1"></i>添加
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- 闪卡展示区 -->
+                                <div id="flashcard-container" class="flex justify-center mb-6">
+                                    <div class="card-flip w-full max-w-md h-64">
+                                        <div class="card-inner relative w-full h-full">
+                                            <div class="card-front absolute w-full h-full bg-white rounded-lg shadow-md border-2 border-primary p-6 flex flex-col items-center justify-center">
+                                                <h4 id="flashcard-front" class="text-xl font-medium text-center">点击或悬停翻转卡片</h4>
+                                                <p class="text-sm text-gray-500 mt-2">开始你的记忆之旅</p>
+                                                <div class="absolute bottom-4 right-4 text-primary">
+                                                    <i class="fa fa-refresh text-xl"></i>
+                                                </div>
+                                            </div>
+                                            <div class="card-back absolute w-full h-full bg-primary text-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center">
+                                                <h4 id="flashcard-back" class="text-xl font-medium text-center">答案将显示在这里</h4>
+                                                <div class="absolute bottom-4 right-4">
+                                                    <i class="fa fa-refresh text-xl"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 闪卡操作区 -->
+                                <div id="flashcard-actions" class="flex justify-center space-x-4">
+                                    <button id="flashcard-hard" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">
+                                        <i class="fa fa-times mr-1"></i>困难
+                                    </button>
+                                    <button id="flashcard-good" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors">
+                                        <i class="fa fa-clock-o mr-1"></i>一般
+                                    </button>
+                                    <button id="flashcard-easy" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
+                                        <i class="fa fa-check mr-1"></i>简单
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 闪卡列表 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">闪卡列表</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="flashcards-list">
+                                    <!-- 闪卡列表将通过JavaScript动态生成 -->
+                                    <div class="border rounded-lg p-4">
+                                        <p class="text-gray-500 text-center">暂无闪卡，请添加</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 学习统计 -->
+                        <div class="lg:col-span-1">
+                            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">学习统计</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="text-sm font-medium text-gray-700">今日复习</span>
+                                            <span id="today-reviews" class="text-sm font-medium text-primary">0张</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div id="today-reviews-progress" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="text-sm font-medium text-gray-700">记忆进度</span>
+                                            <span id="memory-progress" class="text-sm font-medium text-success">0%</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div id="memory-progress-bar" class="bg-success h-2 rounded-full" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="text-sm font-medium text-gray-700">待复习</span>
+                                            <span id="pending-cards" class="text-sm font-medium text-warning">0张</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div id="pending-cards-bar" class="bg-warning h-2 rounded-full" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 学习建议 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">学习建议</h3>
+                                <div class="space-y-4" id="study-tips">
+                                    <div class="flex items-start">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <i class="fa fa-lightbulb-o text-primary"></i>
+                                        </div>
+                                        <div class="ml-3">
+                                            <h4 class="text-sm font-medium text-gray-800">每日复习</h4>
+                                            <p class="text-xs text-gray-600">建议每天至少复习10-15分钟，保持记忆新鲜</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                            <i class="fa fa-check-circle text-success"></i>
+                                        </div>
+                                        <div class="ml-3">
+                                            <h4 class="text-sm font-medium text-gray-800">专注薄弱点</h4>
+                                            <p class="text-xs text-gray-600">重点关注标记为"困难"的卡片，增加复习频率</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                                            <i class="fa fa-clock-o text-warning"></i>
+                                        </div>
+                                        <div class="ml-3">
+                                            <h4 class="text-sm font-medium text-gray-800">间隔重复</h4>
+                                            <p class="text-xs text-gray-600">根据记忆难度调整复习间隔，提高记忆效率</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 收藏题目 -->
+                <section id="favorites" class="page-section hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">收藏题目</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">题目</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">分类</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">难度</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">收藏时间</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200" id="favorites-table-body">
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">暂无收藏题目</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 错题集 -->
+                <section id="wrong-questions" class="page-section hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">错题集</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">题目</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">分类</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">错误次数</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最后错误时间</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200" id="wrong-questions-table-body">
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">暂无错题</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 学习分析 -->
+                <section id="analysis" class="page-section hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">学习时间分布</h3>
+                            <div class="h-64">
+                                <canvas id="time-distribution-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">知识点掌握程度</h3>
+                            <div class="h-64">
+                                <canvas id="knowledge-mastery-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">学习进度追踪</h3>
+                            <div class="h-64">
+                                <canvas id="progress-tracking-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">错题分析</h3>
+                            <div class="h-64">
+                                <canvas id="wrong-questions-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- 添加题目模态框 -->
+    <div id="add-question-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl animate-fade-in">
+            <div class="p-6 border-b">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800">添加题目</h3>
+                    <button class="close-modal text-gray-500 hover:text-gray-700 focus:outline-none">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="add-question-form">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">题目内容</label>
+                        <textarea id="question-content" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">选项</label>
+                        <div id="options-container" class="space-y-2">
+                            <div class="flex items-center">
+                                <input type="text" class="option-input flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="选项A" required>
+                                <input type="radio" name="correct-answer" value="0" class="ml-2" checked>
+                                <span class="ml-1 text-sm text-gray-600">正确答案</span>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="text" class="option-input flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="选项B" required>
+                                <input type="radio" name="correct-answer" value="1" class="ml-2">
+                                <span class="ml-1 text-sm text-gray-600">正确答案</span>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="text" class="option-input flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="选项C" required>
+                                <input type="radio" name="correct-answer" value="2" class="ml-2">
+                                <span class="ml-1 text-sm text-gray-600">正确答案</span>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="text" class="option-input flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="选项D" required>
+                                <input type="radio" name="correct-answer" value="3" class="ml-2">
+                                <span class="ml-1 text-sm text-gray-600">正确答案</span>
+                            </div>
+                        </div>
+                        <button type="button" id="add-option-btn" class="mt-2 text-primary hover:text-blue-700 text-sm focus:outline-none">
+                            <i class="fa fa-plus mr-1"></i>添加选项
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">解析</label>
+                        <textarea id="question-explanation" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" rows="2" required></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">分类</label>
+                            <select id="question-category" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" required>
+                                <option value="">请选择分类</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="css">CSS</option>
+                                <option value="html">HTML</option>
+                                <option value="react">React</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">难度</label>
+                            <select id="question-difficulty" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" required>
+                                <option value="">请选择难度</option>
+                                <option value="1">简单</option>
+                                <option value="2">中等</option>
+                                <option value="3">困难</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">标签</label>
+                            <input type="text" id="question-tags" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="用逗号分隔多个标签">
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" class="close-modal px-4 py-2 border rounded-lg mr-2 hover:bg-gray-100 transition-colors">
+                            取消
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600 transition-colors">
+                            保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加闪卡模态框 -->
+    <div id="add-flashcard-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md animate-fade-in">
+            <div class="p-6 border-b">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800">添加闪卡</h3>
+                    <button class="close-modal text-gray-500 hover:text-gray-700 focus:outline-none">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="add-flashcard-form">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">正面内容</label>
+                        <textarea id="flashcard-front-input" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">背面内容</label>
+                        <textarea id="flashcard-back-input" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" rows="3" required></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">分类</label>
+                            <select id="flashcard-category-input" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" required>
+                                <option value="">请选择分类</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="css">CSS</option>
+                                <option value="html">HTML</option>
+                                <option value="react">React</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">标签</label>
+                            <input type="text" id="flashcard-tags-input" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="用逗号分隔多个标签">
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" class="close-modal px-4 py-2 border rounded-lg mr-2 hover:bg-gray-100 transition-colors">
+                            取消
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600 transition-colors">
+                            保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // 应用状态管理
+        const appState = {
+            questions: [],
+            flashcards: [],
+            userProgress: {
+                totalStudyTime: 0,
+                todayStudyTime: 0,
+                lastStudyDate: null,
+                categories: {},
+                dailyProgress: []
+            },
+            currentQuiz: {
+                questions: [],
+                currentIndex: 0,
+                answers: [],
+                startTime: null,
+                endTime: null
+            },
+            currentFlashcardIndex: 0,
+            studyTimer: null,
+            studyStartTime: null
+        };
+
+        // 工具函数
+        const utils = {
+            // 生成唯一ID
+            generateId: () => {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+            },
+            
+            // 格式化时间
+            formatTime: (minutes) => {
+                if (minutes < 60) {
+                    return `${minutes}分钟`;
+                }
+                const hours = Math.floor(minutes / 60);
+                const mins = minutes % 60;
+                return mins > 0 ? `${hours}小时${mins}分钟` : `${hours}小时`;
+            },
+            
+            // 格式化日期
+            formatDate: (date) => {
+                if (!date) return '';
+                const d = new Date(date);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            },
+            
+            // 获取今天的日期字符串
+            getTodayString: () => {
+                const today = new Date();
+                return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            },
+            
+            // 计算两个日期之间的天数差
+            daysBetween: (date1, date2) => {
+                const oneDay = 24 * 60 * 60 * 1000;
+                return Math.round(Math.abs((new Date(date1) - new Date(date2)) / oneDay));
+            },
+            
+            // 保存数据到localStorage
+            saveToLocalStorage: () => {
+                localStorage.setItem('studyHelperData', JSON.stringify({
+                    questions: appState.questions,
+                    flashcards: appState.flashcards,
+                    userProgress: appState.userProgress
+                }));
+            },
+            
+            // 从localStorage加载数据
+            loadFromLocalStorage: () => {
+                const savedData = localStorage.getItem('studyHelperData');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    appState.questions = data.questions || [];
+                    appState.flashcards = data.flashcards || [];
+                    appState.userProgress = data.userProgress || {
+                        totalStudyTime: 0,
+                        todayStudyTime: 0,
+                        lastStudyDate: null,
+                        categories: {},
+                        dailyProgress: []
+                    };
+                    
+                    // 检查是否需要重置今日学习时间
+                    const today = utils.getTodayString();
+                    const lastDate = utils.formatDate(appState.userProgress.lastStudyDate);
+                    if (lastDate !== today) {
+                        appState.userProgress.todayStudyTime = 0;
+                    }
+                }
+            },
+            
+            // 更新学习时间
+            updateStudyTime: () => {
+                if (appState.studyStartTime) {
+                    const now = new Date();
+                    const minutes = Math.floor((now - appState.studyStartTime) / 60000);
+                    
+                    appState.userProgress.totalStudyTime += minutes;
+                    appState.userProgress.todayStudyTime += minutes;
+                    appState.userProgress.lastStudyDate = now.toISOString();
+                    
+                    // 更新今日进度记录
+                    const today = utils.getTodayString();
+                    const todayProgress = appState.userProgress.dailyProgress.find(p => p.date === today);
+                    if (todayProgress) {
+                        todayProgress.minutes += minutes;
+                    } else {
+                        appState.userProgress.dailyProgress.push({
+                            date: today,
+                            minutes: minutes
+                        });
+                    }
+                    
+                    // 保存数据
+                    utils.saveToLocalStorage();
+                    
+                    // 更新UI
+                    document.getElementById('total-study-time').textContent = utils.formatTime(appState.userProgress.totalStudyTime);
+                    document.getElementById('today-study-time').textContent = `${appState.userProgress.todayStudyTime}分钟`;
+                    
+                    // 重置计时器
+                    appState.studyStartTime = now;
+                }
+            },
+            
+            // 开始学习计时
+            startStudyTimer: () => {
+                appState.studyStartTime = new Date();
+                
+                // 每60秒更新一次学习时间
+                appState.studyTimer = setInterval(() => {
+                    utils.updateStudyTime();
+                }, 60000);
+            },
+            
+            // 停止学习计时
+            stopStudyTimer: () => {
+                if (appState.studyTimer) {
+                    clearInterval(appState.studyTimer);
+                    appState.studyTimer = null;
+                }
+                
+                if (appState.studyStartTime) {
+                    utils.updateStudyTime();
+                    appState.studyStartTime = null;
+                }
+            }
+        };
+
+        // UI控制器
+        const ui = {
+            // 初始化UI
+            init: () => {
+                // 加载数据
+                utils.loadFromLocalStorage();
+                
+                // 初始化导航
+                ui.initNavigation();
+                
+                // 初始化模态框
+                ui.initModals();
+                
+                // 初始化表单事件
+                ui.initForms();
+                
+                // 初始化学习模式
+                ui.initQuizMode();
+                ui.initFlashcardMode();
+                
+                // 更新统计数据
+                ui.updateStatistics();
+                
+                // 初始化图表
+                ui.initCharts();
+                
+                // 开始学习计时
+                utils.startStudyTimer();
+                
+                // 隐藏加载动画
+                document.getElementById('loading').classList.add('hidden');
+            },
+            
+            // 初始化导航
+            initNavigation: () => {
+                // 侧边栏切换
+                document.getElementById('sidebar-toggle').addEventListener('click', () => {
+                    const sidebar = document.getElementById('sidebar');
+                    sidebar.classList.toggle('hidden');
+                });
+                
+                // 导航链接点击事件
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        
+                        // 移除所有活动状态
+                        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active', 'bg-primary', 'text-white'));
+                        document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden'));
+                        
+                        // 添加当前活动状态
+                        link.classList.add('active', 'bg-primary', 'text-white');
+                        
+                        // 显示对应内容
+                        const targetId = link.getAttribute('data-target');
+                        document.getElementById(targetId).classList.remove('hidden');
+                        
+                        // 更新页面标题
+                        document.getElementById('page-title').textContent = link.querySelector('span').textContent;
+                        
+                        // 在移动端关闭侧边栏
+                        if (window.innerWidth < 768) {
+                            document.getElementById('sidebar').classList.add('hidden');
+                        }
+                    });
+                });
+            },
+            
+            // 初始化模态框
+            initModals: () => {
+                // 打开添加题目模态框
+                document.getElementById('add-question-btn').addEventListener('click', () => {
+                    document.getElementById('add-question-modal').classList.remove('hidden');
+                });
+                
+                // 打开添加闪卡模态框
+                document.getElementById('add-flashcard-btn').addEventListener('click', () => {
+                    document.getElementById('add-flashcard-modal').classList.remove('hidden');
+                });
+                
+                // 关闭模态框
+                document.querySelectorAll('.close-modal').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.fixed.inset-0.bg-black.bg-opacity-50').forEach(modal => {
+                            modal.classList.add('hidden');
+                        });
+                    });
+                });
+                
+                // 点击模态框外部关闭
+                document.querySelectorAll('.fixed.inset-0.bg-black.bg-opacity-50').forEach(modal => {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            modal.classList.add('hidden');
+                        }
+                    });
+                });
+            },
+            
+            // 初始化表单事件
+            initForms: () => {
+                // 文件导入处理
+                document.getElementById('file-import').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    // 检查文件大小（200MB限制）
+                    const maxSize = 200 * 1024 * 1024; // 200MB
+                    if (file.size > maxSize) {
+                        alert('文件大小不能超过200MB！');
+                        return;
+                    }
+                    
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    
+                    // 显示加载动画
+                    document.getElementById('loading').classList.remove('hidden');
+                    
+                    if (fileExtension === 'json') {
+                        ui.importJsonFile(file);
+                    } else if (fileExtension === 'txt') {
+                        ui.importTxtFile(file);
+                    } else if (fileExtension === 'pdf') {
+                        ui.importPdfFile(file);
+                    } else {
+                        alert('不支持的文件格式！请选择PDF、TXT或JSON文件。');
+                        document.getElementById('loading').classList.add('hidden');
+                    }
+                });
+                
+                // 添加题目表单提交
+                document.getElementById('add-question-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const questionContent = document.getElementById('question-content').value;
+                    const options = Array.from(document.querySelectorAll('.option-input')).map(input => input.value);
+                    const correctAnswerIndex = parseInt(document.querySelector('input[name="correct-answer"]:checked').value);
+                    const explanation = document.getElementById('question-explanation').value;
+                    const category = document.getElementById('question-category').value;
+                    const difficulty = parseInt(document.getElementById('question-difficulty').value);
+                    const tags = document.getElementById('question-tags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
+                    
+                    // 创建新题目
+                    const newQuestion = {
+                        id: utils.generateId(),
+                        question: questionContent,
+                        options: options,
+                        answer: options[correctAnswerIndex],
+                        answerIndex: correctAnswerIndex,
+                        explanation: explanation,
+                        category: category,
+                        tags: tags,
+                        difficulty: difficulty,
+                        createdAt: new Date().toISOString(),
+                        isFavorite: false,
+                        isWrong: false,
+                        attemptCount: 0,
+                        correctCount: 0
+                    };
+                    
+                    // 添加到题库
+                    appState.questions.push(newQuestion);
+                    
+                    // 保存数据
+                    utils.saveToLocalStorage();
+                    
+                    // 更新UI
+                    ui.renderQuestionsTable();
+                    ui.updateStatistics();
+                    
+                    // 重置表单
+                    document.getElementById('add-question-form').reset();
+                    
+                    // 关闭模态框
+                    document.getElementById('add-question-modal').classList.add('hidden');
+                    
+                    // 显示成功提示
+                    alert('题目添加成功！');
+                });
+                
+                // 添加选项按钮
+                document.getElementById('add-option-btn').addEventListener('click', () => {
+                    const optionsContainer = document.getElementById('options-container');
+                    const optionCount = optionsContainer.children.length;
+                    
+                    if (optionCount < 8) {
+                        const optionLetter = String.fromCharCode(65 + optionCount); // A, B, C, ...
+                        
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'flex items-center';
+                        optionDiv.innerHTML = `
+                            <input type="text" class="option-input flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="选项${optionLetter}" required>
+                            <input type="radio" name="correct-answer" value="${optionCount}" class="ml-2">
+                            <span class="ml-1 text-sm text-gray-600">正确答案</span>
+                        `;
+                        
+                        optionsContainer.appendChild(optionDiv);
+                    } else {
+                        alert('最多只能添加8个选项！');
+                    }
+                });
+                
+                // 添加闪卡表单提交
+                document.getElementById('add-flashcard-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const frontContent = document.getElementById('flashcard-front-input').value;
+                    const backContent = document.getElementById('flashcard-back-input').value;
+                    const category = document.getElementById('flashcard-category-input').value;
+                    const tags = document.getElementById('flashcard-tags-input').value.split(',').map(tag => tag.trim()).filter(tag => tag);
+                    
+                    // 创建新闪卡
+                    const newFlashcard = {
+                        id: utils.generateId(),
+                        front: frontContent,
+                        back: backContent,
+                        category: category,
+                        tags: tags,
+                        isFavorite: false,
+                        lastReviewed: null,
+                        nextReviewDate: new Date().toISOString(),
+                        reviewCount: 0,
+                        easinessFactor: 2.5
+                    };
+                    
+                    // 添加到闪卡库
+                    appState.flashcards.push(newFlashcard);
+                    
+                    // 保存数据
+                    utils.saveToLocalStorage();
+                    
+                    // 更新UI
+                    ui.renderFlashcardsList();
+                    ui.updateFlashcardStats();
+                    
+                    // 重置表单
+                    document.getElementById('add-flashcard-form').reset();
+                    
+                    // 关闭模态框
+                    document.getElementById('add-flashcard-modal').classList.add('hidden');
+                    
+                    // 显示成功提示
+                    alert('闪卡添加成功！');
+                });
+            },
+            
+            // 初始化刷题模式
+            initQuizMode: () => {
+                // 开始刷题按钮
+                document.getElementById('start-quiz-btn').addEventListener('click', () => {
+                    const category = document.getElementById('quiz-category').value;
+                    const count = parseInt(document.getElementById('quiz-count').value);
+                    const difficulty = document.getElementById('quiz-difficulty').value;
+                    
+                    // 筛选题目
+                    let filteredQuestions = [...appState.questions];
+                    
+                    if (category !== 'all') {
+                        filteredQuestions = filteredQuestions.filter(q => q.category === category);
+                    }
+                    
+                    if (difficulty !== 'all') {
+                        filteredQuestions = filteredQuestions.filter(q => q.difficulty === parseInt(difficulty));
+                    }
+                    
+                    if (filteredQuestions.length === 0) {
+                        alert('没有符合条件的题目！');
+                        return;
+                    }
+                    
+                    // 随机选择题目
+                    const shuffled = filteredQuestions.sort(() => 0.5 - Math.random());
+                    const selected = shuffled.slice(0, Math.min(count, shuffled.length));
+                    
+                    // 初始化 quiz 状态
+                    appState.currentQuiz = {
+                        questions: selected,
+                        currentIndex: 0,
+                        answers: new Array(selected.length).fill(null),
+                        startTime: new Date(),
+                        endTime: null
+                    };
+                    
+                    // 显示 quiz 界面
+                    document.getElementById('quiz-container').classList.remove('hidden');
+                    
+                    // 渲染第一题
+                    ui.renderCurrentQuestion();
+                    
+                    // 更新题目计数
+                    document.getElementById('current-question').textContent = '1';
+                    document.getElementById('total-questions').textContent = selected.length;
+                    
+                    // 启动计时器
+                    ui.startQuizTimer();
+                });
+                
+                // 提交答案按钮
+                document.getElementById('submit-answer-btn').addEventListener('click', () => {
+                    const selectedOption = document.querySelector('input[name="quiz-option"]:checked');
+                    
+                    if (!selectedOption) {
+                        alert('请选择一个答案！');
+                        return;
+                    }
+                    
+                    const selectedIndex = parseInt(selectedOption.value);
+                    const currentQuestion = appState.currentQuiz.questions[appState.currentQuiz.currentIndex];
+                    
+                    // 记录答案
+                    appState.currentQuiz.answers[appState.currentQuiz.currentIndex] = selectedIndex;
+                    
+                    // 更新题目统计
+                    currentQuestion.attemptCount++;
+                    if (selectedIndex === currentQuestion.answerIndex) {
+                        currentQuestion.correctCount++;
+                        currentQuestion.isWrong = false;
+                    } else {
+                        currentQuestion.isWrong = true;
+                    }
+                    
+                    // 显示解析
+                    document.getElementById('explanation-container').classList.remove('hidden');
+                    document.getElementById('explanation-text').textContent = currentQuestion.explanation;
+                    
+                    // 禁用选项
+                    document.querySelectorAll('input[name="quiz-option"]').forEach(option => {
+                        option.disabled = true;
+                    });
+                    
+                    // 高亮正确答案
+                    document.querySelectorAll('.option-label').forEach((label, index) => {
+                        if (index === currentQuestion.answerIndex) {
+                            label.classList.add('bg-green-100', 'border-green-500');
+                        } else if (index === selectedIndex) {
+                            label.classList.add('bg-red-100', 'border-red-500');
+                        }
+                    });
+                    
+                    // 更新按钮状态
+                    document.getElementById('submit-answer-btn').disabled = true;
+                    
+                    // 如果是最后一题，启用完成按钮
+                    if (appState.currentQuiz.currentIndex === appState.currentQuiz.questions.length - 1) {
+                        document.getElementById('next-question-btn').textContent = '完成';
+                        document.getElementById('next-question-btn').onclick = ui.finishQuiz;
+                    } else {
+                        document.getElementById('next-question-btn').disabled = false;
+                    }
+                    
+                    // 保存数据
+                    utils.saveToLocalStorage();
+                });
+                
+                // 下一题按钮
+                document.getElementById('next-question-btn').addEventListener('click', () => {
+                    if (appState.currentQuiz.currentIndex < appState.currentQuiz.questions.length - 1) {
+                        appState.currentQuiz.currentIndex++;
+                        ui.renderCurrentQuestion();
+                        document.getElementById('current-question').textContent = appState.currentQuiz.currentIndex + 1;
+                    }
+                });
+                
+                // 上一题按钮
+                document.getElementById('prev-question-btn').addEventListener('click', () => {
+                    if (appState.currentQuiz.currentIndex > 0) {
+                        appState.currentQuiz.currentIndex--;
+                        ui.renderCurrentQuestion();
+                        document.getElementById('current-question').textContent = appState.currentQuiz.currentIndex + 1;
+                    }
+                });
+                
+                // 重新测试按钮
+                document.getElementById('restart-quiz-btn').addEventListener('click', () => {
+                    document.getElementById('quiz-result').classList.add('hidden');
+                    document.getElementById('start-quiz-btn').click();
+                });
+                
+                // 返回设置按钮
+                document.getElementById('back-to-quiz-btn').addEventListener('click', () => {
+                    document.getElementById('quiz-container').classList.add('hidden');
+                    document.getElementById('quiz-result').classList.add('hidden');
+                    ui.stopQuizTimer();
+                });
+            },
+            
+            // 初始化闪卡模式
+            initFlashcardMode: () => {
+                // 渲染闪卡列表
+                ui.renderFlashcardsList();
+                
+                // 更新闪卡统计
+                ui.updateFlashcardStats();
+                
+                // 渲染当前闪卡
+                ui.renderCurrentFlashcard();
+                
+                // 闪卡难度按钮
+                document.getElementById('flashcard-hard').addEventListener('click', () => {
+                    ui.updateFlashcardSchedule(1);
+                });
+                
+                document.getElementById('flashcard-good').addEventListener('click', () => {
+                    ui.updateFlashcardSchedule(2);
+                });
+                
+                document.getElementById('flashcard-easy').addEventListener('click', () => {
+                    ui.updateFlashcardSchedule(3);
+                });
+                
+                // 闪卡分类筛选
+                document.getElementById('flashcard-category').addEventListener('change', () => {
+                    ui.renderCurrentFlashcard();
+                });
+            },
+            
+            // 渲染当前题目
+            renderCurrentQuestion: () => {
+                const currentQuestion = appState.currentQuiz.questions[appState.currentQuiz.currentIndex];
+                const userAnswer = appState.currentQuiz.answers[appState.currentQuiz.currentIndex];
+                
+                // 显示题目内容
+                document.getElementById('question-text').textContent = currentQuestion.question;
+                
+                // 显示选项
+                const optionsContainer = document.getElementById('options-container');
+                optionsContainer.innerHTML = '';
+                
+                currentQuestion.options.forEach((option, index) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'option-label border rounded-lg p-3 cursor-pointer hover:bg-gray-50 transition-colors';
+                    
+                    const optionLetter = String.fromCharCode(65 + index);
+                    
+                    optionDiv.innerHTML = `
+                        <label class="flex items-center cursor-pointer">
+                            <input type="radio" name="quiz-option" value="${index}" class="mr-3" ${userAnswer === index ? 'checked' : ''}>
+                            <span class="font-medium mr-2">${optionLetter}.</span>
+                            <span>${option}</span>
+                        </label>
+                    `;
+                    
+                    optionsContainer.appendChild(optionDiv);
+                });
+                
+                // 重置解析区域
+                document.getElementById('explanation-container').classList.add('hidden');
+                
+                // 重置按钮状态
+                document.getElementById('submit-answer-btn').disabled = userAnswer !== null;
+                document.getElementById('next-question-btn').disabled = userAnswer === null;
+                document.getElementById('prev-question-btn').disabled = appState.currentQuiz.currentIndex === 0;
+                
+                // 如果已经回答过，显示解析
+                if (userAnswer !== null) {
+                    document.getElementById('explanation-container').classList.remove('hidden');
+                    document.getElementById('explanation-text').textContent = currentQuestion.explanation;
+                    
+                    // 禁用选项
+                    document.querySelectorAll('input[name="quiz-option"]').forEach(option => {
+                        option.disabled = true;
+                    });
+                    
+                    // 高亮正确答案和用户答案
+                    document.querySelectorAll('.option-label').forEach((label, index) => {
+                        if (index === currentQuestion.answerIndex) {
+                            label.classList.add('bg-green-100', 'border-green-500');
+                        } else if (index === userAnswer) {
+                            label.classList.add('bg-red-100', 'border-red-500');
+                        }
+                    });
+                }
+                
+                // 如果是最后一题且已回答，更改下一题按钮文本
+                if (appState.currentQuiz.currentIndex === appState.currentQuiz.questions.length - 1 && userAnswer !== null) {
+                    document.getElementById('next-question-btn').textContent = '完成';
+                    document.getElementById('next-question-btn').onclick = ui.finishQuiz;
+                } else {
+                    document.getElementById('next-question-btn').textContent = '下一题';
+                    document.getElementById('next-question-btn').onclick = null;
+                }
+            },
+            
+            // 完成测试
+            finishQuiz: () => {
+                // 停止计时器
+                ui.stopQuizTimer();
+                
+                // 计算结果
+                const correctAnswers = appState.currentQuiz.answers.filter((answer, index) => {
+                    return answer === appState.currentQuiz.questions[index].answerIndex;
+                }).length;
+                
+                const totalQuestions = appState.currentQuiz.questions.length;
+                const correctRate = Math.round((correctAnswers / totalQuestions) * 100);
+                
+                // 更新统计
+                document.getElementById('result-total').textContent = totalQuestions;
+                document.getElementById('result-correct').textContent = correctAnswers;
+                document.getElementById('result-wrong').textContent = totalQuestions - correctAnswers;
+                document.getElementById('result-rate').textContent = `${correctRate}%`;
+                
+                // 显示结果
+                document.getElementById('quiz-container').classList.add('hidden');
+                document.getElementById('quiz-result').classList.remove('hidden');
+                
+                // 更新全局统计
+                ui.updateStatistics();
+            },
+            
+            // 启动测试计时器
+            startQuizTimer: () => {
+                appState.quizStartTime = new Date();
+                
+                appState.quizTimer = setInterval(() => {
+                    const now = new Date();
+                    const elapsedSeconds = Math.floor((now - appState.quizStartTime) / 1000);
+                    
+                    const minutes = Math.floor(elapsedSeconds / 60);
+                    const seconds = elapsedSeconds % 60;
+                    
+                    document.getElementById('quiz-timer').textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }, 1000);
+            },
+            
+            // 停止测试计时器
+            stopQuizTimer: () => {
+                if (appState.quizTimer) {
+                    clearInterval(appState.quizTimer);
+                    appState.quizTimer = null;
+                }
+            },
+            
+            // 渲染当前闪卡
+            renderCurrentFlashcard: () => {
+                const category = document.getElementById('flashcard-category').value;
+                
+                // 筛选今天需要复习的闪卡
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                let filteredFlashcards = appState.flashcards.filter(card => {
+                    const nextReviewDate = new Date(card.nextReviewDate);
+                    nextReviewDate.setHours(0, 0, 0, 0);
+                    return nextReviewDate <= today;
+                });
+                
+                // 按分类筛选
+                if (category !== 'all') {
+                    filteredFlashcards = filteredFlashcards.filter(card => card.category === category);
+                }
+                
+                if (filteredFlashcards.length === 0) {
+                    // 没有需要复习的闪卡，显示提示
+                    document.getElementById('flashcard-front').textContent = '今日无待复习闪卡';
+                    document.getElementById('flashcard-back').textContent = '请添加新闪卡或选择其他分类';
+                    document.getElementById('flashcard-actions').classList.add('hidden');
+                    return;
+                }
+                
+                // 随机选择一张闪卡
+                appState.currentFlashcardIndex = Math.floor(Math.random() * filteredFlashcards.length);
+                const currentFlashcard = filteredFlashcards[appState.currentFlashcardIndex];
+                
+                // 显示闪卡内容
+                document.getElementById('flashcard-front').textContent = currentFlashcard.front;
+                document.getElementById('flashcard-back').textContent = currentFlashcard.back;
+                
+                // 显示操作按钮
+                document.getElementById('flashcard-actions').classList.remove('hidden');
+            },
+            
+            // 更新闪卡复习计划
+            updateFlashcardSchedule: (quality) => {
+                const category = document.getElementById('flashcard-category').value;
+                
+                // 筛选今天需要复习的闪卡
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                let filteredFlashcards = appState.flashcards.filter(card => {
+                    const nextReviewDate = new Date(card.nextReviewDate);
+                    nextReviewDate.setHours(0, 0, 0, 0);
+                    return nextReviewDate <= today;
+                });
+                
+                // 按分类筛选
+                if (category !== 'all') {
+                    filteredFlashcards = filteredFlashcards.filter(card => card.category === category);
+                }
+                
+                if (filteredFlashcards.length === 0) return;
+                
+                const currentFlashcard = filteredFlashcards[appState.currentFlashcardIndex];
+                const cardIndex = appState.flashcards.findIndex(card => card.id === currentFlashcard.id);
+                
+                if (cardIndex === -1) return;
+                
+                // 使用SM-2算法更新复习计划
+                if (quality < 2) {
+                    // 记忆失败，重置复习计划
+                    appState.flashcards[cardIndex].reviewCount = 0;
+                    appState.flashcards[cardIndex].easinessFactor = 2.5;
+                    
+                    // 明天再次复习
+                    const nextReviewDate = new Date();
+                    nextReviewDate.setDate(nextReviewDate.getDate() + 1);
+                    appState.flashcards[cardIndex].nextReviewDate = nextReviewDate.toISOString();
+                } else {
+                    // 记忆成功，更新复习计划
+                    appState.flashcards[cardIndex].reviewCount++;
+                    
+                    // 更新难易系数
+                    const ef = appState.flashcards[cardIndex].easinessFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+                    appState.flashcards[cardIndex].easinessFactor = Math.max(1.3, ef);
+                    
+                    // 计算下次复习间隔
+                    let interval;
+                    if (appState.flashcards[cardIndex].reviewCount === 1) {
+                        interval = 1;
+                    } else if (appState.flashcards[cardIndex].reviewCount === 2) {
+                        interval = 6;
+                    } else {
+                        interval = Math.round(appState.flashcards[cardIndex].reviewCount * appState.flashcards[cardIndex].easinessFactor);
+                    }
+                    
+                    // 设置下次复习日期
+                    const nextReviewDate = new Date();
+                    nextReviewDate.setDate(nextReviewDate.getDate() + interval);
+                    appState.flashcards[cardIndex].nextReviewDate = nextReviewDate.toISOString();
+                }
+                
+                // 更新最后复习时间
+                appState.flashcards[cardIndex].lastReviewed = new Date().toISOString();
+                
+                // 保存数据
+                utils.saveToLocalStorage();
+                
+                // 更新统计
+                ui.updateFlashcardStats();
+                
+                // 渲染下一张闪卡
+                ui.renderCurrentFlashcard();
+            },
+            
+            // 渲染闪卡列表
+            renderFlashcardsList: () => {
+                const flashcardsList = document.getElementById('flashcards-list');
+                flashcardsList.innerHTML = '';
+                
+                if (appState.flashcards.length === 0) {
+                    flashcardsList.innerHTML = `
+                        <div class="border rounded-lg p-4">
+                            <p class="text-gray-500 text-center">暂无闪卡，请添加</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                appState.flashcards.slice(0, 10).forEach(card => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'border rounded-lg p-4 hover:shadow-md transition-shadow';
+                    
+                    cardDiv.innerHTML = `
+                        <h4 class="font-medium text-gray-800 truncate">${card.front}</h4>
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="text-xs text-gray-500">${card.category || '未分类'}</span>
+                            <div class="flex items-center space-x-2">
+                                <button class="text-yellow-500 hover:text-yellow-600 focus:outline-none ${card.isFavorite ? 'text-yellow-500' : 'text-gray-400'}" onclick="ui.toggleFlashcardFavorite('${card.id}')">
+                                    <i class="fa fa-star"></i>
+                                </button>
+                                <button class="text-gray-500 hover:text-gray-700 focus:outline-none" onclick="ui.editFlashcard('${card.id}')">
+                                    <i class="fa fa-pencil"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    flashcardsList.appendChild(cardDiv);
+                });
+            },
+            
+            // 更新闪卡统计
+            updateFlashcardStats: () => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                // 今日复习数量
+                const todayReviews = appState.flashcards.filter(card => {
+                    if (!card.lastReviewed) return false;
+                    const reviewDate = new Date(card.lastReviewed);
+                    reviewDate.setHours(0, 0, 0, 0);
+                    return reviewDate.getTime() === today.getTime();
+                }).length;
+                
+                // 待复习数量
+                const pendingCards = appState.flashcards.filter(card => {
+                    const nextReviewDate = new Date(card.nextReviewDate);
+                    nextReviewDate.setHours(0, 0, 0, 0);
+                    return nextReviewDate <= today;
+                }).length;
+                
+                // 记忆进度
+                const totalCards = appState.flashcards.length;
+                const memoryProgress = totalCards > 0 ? Math.round((todayReviews / totalCards) * 100) : 0;
+                
+                // 更新UI
+                document.getElementById('today-reviews').textContent = `${todayReviews}张`;
+                document.getElementById('today-reviews-progress').style.width = `${Math.min(todayReviews * 10, 100)}%`;
+                
+                document.getElementById('pending-cards').textContent = `${pendingCards}张`;
+                document.getElementById('pending-cards-bar').style.width = `${Math.min((pendingCards / Math.max(totalCards, 1)) * 100, 100)}%`;
+                
+                document.getElementById('memory-progress').textContent = `${memoryProgress}%`;
+                document.getElementById('memory-progress-bar').style.width = `${memoryProgress}%`;
+            },
+            
+            // 切换闪卡收藏状态
+            toggleFlashcardFavorite: (cardId) => {
+                const cardIndex = appState.flashcards.findIndex(card => card.id === cardId);
+                if (cardIndex !== -1) {
+                    appState.flashcards[cardIndex].isFavorite = !appState.flashcards[cardIndex].isFavorite;
+                    utils.saveToLocalStorage();
+                    ui.renderFlashcardsList();
+                }
+            },
+            
+            // 编辑闪卡
+            editFlashcard: (cardId) => {
+                const cardIndex = appState.flashcards.findIndex(card => card.id === cardId);
+                if (cardIndex !== -1) {
+                    const card = appState.flashcards[cardIndex];
+                    
+                    // 填充表单
+                    document.getElementById('flashcard-front-input').value = card.front;
+                    document.getElementById('flashcard-back-input').value = card.back;
+                    document.getElementById('flashcard-category-input').value = card.category || '';
+                    document.getElementById('flashcard-tags-input').value = card.tags.join(',');
+                    
+                    // 打开模态框
+                    document.getElementById('add-flashcard-modal').classList.remove('hidden');
+                    
+                    // 修改提交事件
+                    const originalSubmitHandler = document.getElementById('add-flashcard-form').onsubmit;
+                    
+                    document.getElementById('add-flashcard-form').onsubmit = (e) => {
+                        e.preventDefault();
+                        
+                        // 更新闪卡
+                        appState.flashcards[cardIndex].front = document.getElementById('flashcard-front-input').value;
+                        appState.flashcards[cardIndex].back = document.getElementById('flashcard-back-input').value;
+                        appState.flashcards[cardIndex].category = document.getElementById('flashcard-category-input').value;
+                        appState.flashcards[cardIndex].tags = document.getElementById('flashcard-tags-input').value.split(',').map(tag => tag.trim()).filter(tag => tag);
+                        
+                        // 保存数据
+                        utils.saveToLocalStorage();
+                        
+                        // 更新UI
+                        ui.renderFlashcardsList();
+                        ui.renderCurrentFlashcard();
+                        
+                        // 重置表单
+                        document.getElementById('add-flashcard-form').reset();
+                        
+                        // 关闭模态框
+                        document.getElementById('add-flashcard-modal').classList.add('hidden');
+                        
+                        // 恢复原始提交事件
+                        document.getElementById('add-flashcard-form').onsubmit = originalSubmitHandler;
+                        
+                        // 显示成功提示
+                        alert('闪卡更新成功！');
+                    };
+                }
+            },
+            
+            // 渲染题目表格
+            renderQuestionsTable: () => {
+                const tableBody = document.getElementById('questions-table-body');
+                tableBody.innerHTML = '';
+                
+                if (appState.questions.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">暂无题目，请添加</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                appState.questions.forEach(question => {
+                    const row = document.createElement('tr');
+                    
+                    const difficultyStars = '★'.repeat(question.difficulty) + '☆'.repeat(3 - question.difficulty);
+                    const correctRate = question.attemptCount > 0 ? Math.round((question.correctCount / question.attemptCount) * 100) : 0;
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-800">${question.question}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">${question.category}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-warning">${difficultyStars}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-700 mr-2">${correctRate}%</span>
+                                <div class="w-16 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: ${correctRate}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-2">
+                                <button class="text-yellow-500 hover:text-yellow-600 focus:outline-none ${question.isFavorite ? 'text-yellow-500' : 'text-gray-400'}" onclick="ui.toggleQuestionFavorite('${question.id}')">
+                                    <i class="fa fa-star"></i>
+                                </button>
+                                <button class="text-primary hover:text-blue-600 focus:outline-none" onclick="ui.editQuestion('${question.id}')">
+                                    <i class="fa fa-pencil"></i>
+                                </button>
+                                <button class="text-danger hover:text-red-600 focus:outline-none" onclick="ui.deleteQuestion('${question.id}')">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+            },
+            
+            // 切换题目收藏状态
+            toggleQuestionFavorite: (questionId) => {
+                const questionIndex = appState.questions.findIndex(q => q.id === questionId);
+                if (questionIndex !== -1) {
+                    appState.questions[questionIndex].isFavorite = !appState.questions[questionIndex].isFavorite;
+                    utils.saveToLocalStorage();
+                    ui.renderQuestionsTable();
+                    ui.updateStatistics();
+                }
+            },
+            
+            // 编辑题目
+            editQuestion: (questionId) => {
+                const questionIndex = appState.questions.findIndex(q => q.id === questionId);
+                if (questionIndex !== -1) {
+                    const question = appState.questions[questionIndex];
+                    
+                    // 填充表单
+                    document.getElementById('question-content').value = question.question;
+                    document.getElementById('question-explanation').value = question.explanation;
+                    document.getElementById('question-category').value = question.category;
+                    document.getElementById('question-difficulty').value = question.difficulty.toString();
+                    document.getElementById('question-tags').value = question.tags.join(',');
+                    
+                    // 填充选项
+                    const optionsContainer = document.getElementById('options-container');
+                    optionsContainer.innerHTML = '';
+                    
+                    question.options.forEach((option, index) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'flex items-center';
+                        
+                        const optionLetter = String.fromCharCode(65 + index);
+                        
+                        optionDiv.innerHTML = `
+                            <input type="text" class="option-input flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="选项${optionLetter}" value="${option}" required>
+                            <input type="radio" name="correct-answer" value="${index}" class="ml-2" ${index === question.answerIndex ? 'checked' : ''}>
+                            <span class="ml-1 text-sm text-gray-600">正确答案</span>
+                        `;
+                        
+                        optionsContainer.appendChild(optionDiv);
+                    });
+                    
+                    // 打开模态框
+                    document.getElementById('add-question-modal').classList.remove('hidden');
+                    
+                    // 修改提交事件
+                    const originalSubmitHandler = document.getElementById('add-question-form').onsubmit;
+                    
+                    document.getElementById('add-question-form').onsubmit = (e) => {
+                        e.preventDefault();
+                        
+                        // 更新题目
+                        appState.questions[questionIndex].question = document.getElementById('question-content').value;
+                        appState.questions[questionIndex].options = Array.from(document.querySelectorAll('.option-input')).map(input => input.value);
+                        appState.questions[questionIndex].answerIndex = parseInt(document.querySelector('input[name="correct-answer"]:checked').value);
+                        appState.questions[questionIndex].answer = appState.questions[questionIndex].options[appState.questions[questionIndex].answerIndex];
+                        appState.questions[questionIndex].explanation = document.getElementById('question-explanation').value;
+                        appState.questions[questionIndex].category = document.getElementById('question-category').value;
+                        appState.questions[questionIndex].difficulty = parseInt(document.getElementById('question-difficulty').value);
+                        appState.questions[questionIndex].tags = document.getElementById('question-tags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
+                        
+                        // 保存数据
+                        utils.saveToLocalStorage();
+                        
+                        // 更新UI
+                        ui.renderQuestionsTable();
+                        ui.updateStatistics();
+                        
+                        // 重置表单
+                        document.getElementById('add-question-form').reset();
+                        
+                        // 关闭模态框
+                        document.getElementById('add-question-modal').classList.add('hidden');
+                        
+                        // 恢复原始提交事件
+                        document.getElementById('add-question-form').onsubmit = originalSubmitHandler;
+                        
+                        // 显示成功提示
+                        alert('题目更新成功！');
+                    };
+                }
+            },
+            
+            // 删除题目
+            deleteQuestion: (questionId) => {
+                if (confirm('确定要删除这个题目吗？')) {
+                    appState.questions = appState.questions.filter(q => q.id !== questionId);
+                    utils.saveToLocalStorage();
+                    ui.renderQuestionsTable();
+                    ui.updateStatistics();
+                }
+            },
+            
+            // 更新统计数据
+            updateStatistics: () => {
+                // 总学习时间
+                document.getElementById('total-study-time').textContent = utils.formatTime(appState.userProgress.totalStudyTime);
+                document.getElementById('today-study-time').textContent = `${appState.userProgress.todayStudyTime}分钟`;
+                
+                // 已完成题目
+                const completedQuestions = appState.questions.filter(q => q.attemptCount > 0).length;
+                document.getElementById('completed-questions').textContent = `${completedQuestions}题`;
+                
+                // 正确率
+                const totalAttempts = appState.questions.reduce((sum, q) => sum + q.attemptCount, 0);
+                const totalCorrect = appState.questions.reduce((sum, q) => sum + q.correctCount, 0);
+                const correctRate = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
+                document.getElementById('correct-rate').textContent = `${correctRate}%`;
+                document.querySelector('#completed-questions').parentElement.nextElementSibling.querySelector('.bg-success').style.width = `${correctRate}%`;
+                
+                // 收藏题目
+                const favoriteQuestions = appState.questions.filter(q => q.isFavorite).length;
+                document.getElementById('favorite-questions').textContent = `${favoriteQuestions}题`;
+                
+                // 本周新增收藏
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                const newFavorites = appState.questions.filter(q => {
+                    if (!q.isFavorite) return false;
+                    const createdDate = new Date(q.createdAt);
+                    return createdDate >= oneWeekAgo;
+                }).length;
+                document.getElementById('new-favorites').textContent = `${newFavorites}题`;
+                
+                // 错题数量
+                const wrongQuestions = appState.questions.filter(q => q.isWrong).length;
+                document.getElementById('wrong-questions-count').textContent = `${wrongQuestions}题`;
+                
+                // 待复习错题
+                const pendingReview = appState.questions.filter(q => q.isWrong && q.attemptCount > 0).length;
+                document.getElementById('pending-review').textContent = `${pendingReview}题`;
+                
+                // 渲染题目表格
+                ui.renderQuestionsTable();
+                
+                // 渲染收藏题目表格
+                ui.renderFavoritesTable();
+                
+                // 渲染错题表格
+                ui.renderWrongQuestionsTable();
+                
+                // 更新图表
+                ui.updateCharts();
+            },
+            
+            // 渲染收藏题目表格
+            renderFavoritesTable: () => {
+                const tableBody = document.getElementById('favorites-table-body');
+                tableBody.innerHTML = '';
+                
+                const favoriteQuestions = appState.questions.filter(q => q.isFavorite);
+                
+                if (favoriteQuestions.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">暂无收藏题目</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                favoriteQuestions.forEach(question => {
+                    const row = document.createElement('tr');
+                    
+                    const difficultyStars = '★'.repeat(question.difficulty) + '☆'.repeat(3 - question.difficulty);
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-800">${question.question}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">${question.category}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-warning">${difficultyStars}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-sm text-gray-700">${utils.formatDate(question.createdAt)}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-2">
+                                <button class="text-primary hover:text-blue-600 focus:outline-none" onclick="ui.viewQuestionDetail('${question.id}')">
+                                    <i class="fa fa-eye"></i>
+                                </button>
+                                <button class="text-gray-500 hover:text-gray-700 focus:outline-none" onclick="ui.toggleQuestionFavorite('${question.id}')">
+                                    <i class="fa fa-star text-yellow-500"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+            },
+            
+            // 渲染错题表格
+            renderWrongQuestionsTable: () => {
+                const tableBody = document.getElementById('wrong-questions-table-body');
+                tableBody.innerHTML = '';
+                
+                const wrongQuestions = appState.questions.filter(q => q.isWrong);
+                
+                if (wrongQuestions.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">暂无错题</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                wrongQuestions.forEach(question => {
+                    const row = document.createElement('tr');
+                    
+                    const wrongCount = question.attemptCount - question.correctCount;
+                    const lastAttemptDate = question.lastAttemptDate ? utils.formatDate(question.lastAttemptDate) : '未知';
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-800">${question.question}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">${question.category}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-danger font-medium">${wrongCount}次</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-sm text-gray-700">${lastAttemptDate}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-2">
+                                <button class="text-primary hover:text-blue-600 focus:outline-none" onclick="ui.viewQuestionDetail('${question.id}')">
+                                    <i class="fa fa-eye"></i>
+                                </button>
+                                <button class="text-success hover:text-green-600 focus:outline-none" onclick="ui.markQuestionCorrect('${question.id}')">
+                                    <i class="fa fa-check"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+            },
+            
+            // 查看题目详情
+            viewQuestionDetail: (questionId) => {
+                const question = appState.questions.find(q => q.id === questionId);
+                if (question) {
+                    alert(`题目：${question.question}\n\n答案：${question.answer}\n\n解析：${question.explanation}`);
+                }
+            },
+            
+            // 标记题目为已掌握
+            markQuestionCorrect: (questionId) => {
+                const questionIndex = appState.questions.findIndex(q => q.id === questionId);
+                if (questionIndex !== -1) {
+                    appState.questions[questionIndex].isWrong = false;
+                    utils.saveToLocalStorage();
+                    ui.renderWrongQuestionsTable();
+                    ui.updateStatistics();
+                }
+            },
+            
+            // 初始化图表
+            initCharts: () => {
+                // 学习时间趋势图
+                const studyTimeCtx = document.getElementById('study-time-chart').getContext('2d');
+                ui.studyTimeChart = new Chart(studyTimeCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '学习时间（分钟）',
+                            data: [],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+                
+                // 知识点掌握情况图
+                const knowledgeCtx = document.getElementById('knowledge-chart').getContext('2d');
+                ui.knowledgeChart = new Chart(knowledgeCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '掌握程度',
+                            data: [],
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: '#3b82f6',
+                            pointBackgroundColor: '#3b82f6',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: '#3b82f6'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: {
+                                    display: true
+                                },
+                                suggestedMin: 0,
+                                suggestedMax: 100
+                            }
+                        }
+                    }
+                });
+                
+                // 时间分布图表
+                const timeDistributionCtx = document.getElementById('time-distribution-chart').getContext('2d');
+                ui.timeDistributionChart = new Chart(timeDistributionCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '学习时间（分钟）',
+                            data: [],
+                            backgroundColor: '#3b82f6'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+                
+                // 知识点掌握程度图表
+                const knowledgeMasteryCtx = document.getElementById('knowledge-mastery-chart').getContext('2d');
+                ui.knowledgeMasteryChart = new Chart(knowledgeMasteryCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['掌握', '熟悉', '了解', '陌生'],
+                        datasets: [{
+                            data: [0, 0, 0, 0],
+                            backgroundColor: [
+                                '#22c55e',
+                                '#3b82f6',
+                                '#f59e0b',
+                                '#ef4444'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+                
+                // 进度追踪图表
+                const progressTrackingCtx = document.getElementById('progress-tracking-chart').getContext('2d');
+                ui.progressTrackingChart = new Chart(progressTrackingCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '完成题目数',
+                            data: [],
+                            borderColor: '#22c55e',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+                
+                // 错题分析图表
+                const wrongQuestionsCtx = document.getElementById('wrong-questions-chart').getContext('2d');
+                ui.wrongQuestionsChart = new Chart(wrongQuestionsCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            data: [],
+                            backgroundColor: []
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+                
+                // 更新图表数据
+                ui.updateCharts();
+            },
+            
+            // 更新图表数据
+            updateCharts: () => {
+                // 更新学习时间趋势图
+                ui.updateStudyTimeChart();
+                
+                // 更新知识点掌握情况图
+                ui.updateKnowledgeChart();
+                
+                // 更新时间分布图表
+                ui.updateTimeDistributionChart();
+                
+                // 更新知识点掌握程度图表
+                ui.updateKnowledgeMasteryChart();
+                
+                // 更新进度追踪图表
+                ui.updateProgressTrackingChart();
+                
+                // 更新错题分析图表
+                ui.updateWrongQuestionsChart();
+            },
+            
+            // 更新学习时间趋势图
+            updateStudyTimeChart: () => {
+                // 获取最近7天的日期和学习时间
+                const today = new Date();
+                const labels = [];
+                const data = [];
+                
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    const dateString = utils.formatDate(date);
+                    
+                    labels.push(dateString);
+                    
+                    const dayProgress = appState.userProgress.dailyProgress.find(p => p.date === dateString);
+                    data.push(dayProgress ? dayProgress.minutes : 0);
+                }
+                
+                ui.studyTimeChart.data.labels = labels;
+                ui.studyTimeChart.data.datasets[0].data = data;
+                ui.studyTimeChart.update();
+            },
+            
+            // 更新知识点掌握情况图
+            updateKnowledgeChart: () => {
+                // 获取所有分类
+                const categories = [...new Set(appState.questions.map(q => q.category))];
+                
+                // 计算每个分类的掌握程度
+                const data = categories.map(category => {
+                    const categoryQuestions = appState.questions.filter(q => q.category === category);
+                    if (categoryQuestions.length === 0) return 0;
+                    
+                    const totalAttempts = categoryQuestions.reduce((sum, q) => sum + q.attemptCount, 0);
+                    const totalCorrect = categoryQuestions.reduce((sum, q) => sum + q.correctCount, 0);
+                    
+                    return totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
+                });
+                
+                ui.knowledgeChart.data.labels = categories;
+                ui.knowledgeChart.data.datasets[0].data = data;
+                ui.knowledgeChart.update();
+            },
+            
+            // 更新时间分布图表
+            updateTimeDistributionChart: () => {
+                // 获取最近7天的日期和学习时间
+                const today = new Date();
+                const labels = [];
+                const data = [];
+                
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    const dateString = utils.formatDate(date);
+                    
+                    labels.push(dateString);
+                    
+                    const dayProgress = appState.userProgress.dailyProgress.find(p => p.date === dateString);
+                    data.push(dayProgress ? dayProgress.minutes : 0);
+                }
+                
+                ui.timeDistributionChart.data.labels = labels;
+                ui.timeDistributionChart.data.datasets[0].data = data;
+                ui.timeDistributionChart.update();
+            },
+            
+            // 更新知识点掌握程度图表
+            updateKnowledgeMasteryChart: () => {
+                // 计算不同掌握程度的题目数量
+                let mastered = 0; // 正确率 >= 80%
+                let familiar = 0; // 正确率 >= 60% 且 < 80%
+                let understood = 0; // 正确率 >= 40% 且 < 60%
+                let unfamiliar = 0; // 正确率 < 40% 或未作答
+                
+                appState.questions.forEach(question => {
+                    if (question.attemptCount === 0) {
+                        unfamiliar++;
+                        return;
+                    }
+                    
+                    const correctRate = (question.correctCount / question.attemptCount) * 100;
+                    
+                    if (correctRate >= 80) {
+                        mastered++;
+                    } else if (correctRate >= 60) {
+                        familiar++;
+                    } else if (correctRate >= 40) {
+                        understood++;
+                    } else {
+                        unfamiliar++;
+                    }
+                });
+                
+                ui.knowledgeMasteryChart.data.datasets[0].data = [mastered, familiar, understood, unfamiliar];
+                ui.knowledgeMasteryChart.update();
+            },
+            
+            // 更新进度追踪图表
+            updateProgressTrackingChart: () => {
+                // 获取最近7天的日期和完成题目数
+                const today = new Date();
+                const labels = [];
+                const data = [];
+                
+                // 模拟数据，实际应用中应该从用户进度中获取
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    const dateString = utils.formatDate(date);
+                    
+                    labels.push(dateString);
+                    
+                    // 随机生成完成题目数（实际应用中应该从用户进度中获取）
+                    data.push(Math.floor(Math.random() * 20));
+                }
+                
+                ui.progressTrackingChart.data.labels = labels;
+                ui.progressTrackingChart.data.datasets[0].data = data;
+                ui.progressTrackingChart.update();
+            },
+            
+            // 更新错题分析图表
+            updateWrongQuestionsChart: () => {
+                // 按分类统计错题数量
+                const wrongByCategory = {};
+                
+                appState.questions.filter(q => q.isWrong).forEach(question => {
+                    const category = question.category || '未分类';
+                    wrongByCategory[category] = (wrongByCategory[category] || 0) + 1;
+                });
+                
+                const labels = Object.keys(wrongByCategory);
+                const data = Object.values(wrongByCategory);
+                
+                // 生成随机颜色
+                const backgroundColors = labels.map(() => {
+                    const r = Math.floor(Math.random() * 200);
+                    const g = Math.floor(Math.random() * 200);
+                    const b = Math.floor(Math.random() * 200);
+                    return `rgb(${r}, ${g}, ${b})`;
+                });
+                
+                ui.wrongQuestionsChart.data.labels = labels;
+                ui.wrongQuestionsChart.data.datasets[0].data = data;
+                ui.wrongQuestionsChart.data.datasets[0].backgroundColor = backgroundColors;
+                ui.wrongQuestionsChart.update();
+            },
+            
+            // 导入JSON文件
+            importJsonFile: (file) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        let importedCount = 0;
+                        
+                        // 处理题目数据
+                        if (data.questions && Array.isArray(data.questions)) {
+                            data.questions.forEach(q => {
+                                // 验证必要字段
+                                if (q.question && q.options && Array.isArray(q.options) && q.answer !== undefined) {
+                                    // 生成新ID确保唯一性
+                                    q.id = utils.generateId();
+                                    q.createdAt = new Date().toISOString();
+                                    q.isFavorite = false;
+                                    q.isWrong = false;
+                                    q.attemptCount = 0;
+                                    q.correctCount = 0;
+                                    
+                                    appState.questions.push(q);
+                                    importedCount++;
+                                }
+                            });
+                        }
+                        
+                        // 处理闪卡数据
+                        if (data.flashcards && Array.isArray(data.flashcards)) {
+                            data.flashcards.forEach(card => {
+                                // 验证必要字段
+                                if (card.front && card.back) {
+                                    // 生成新ID确保唯一性
+                                    card.id = utils.generateId();
+                                    card.isFavorite = false;
+                                    card.lastReviewed = null;
+                                    card.nextReviewDate = new Date().toISOString();
+                                    card.reviewCount = 0;
+                                    card.easinessFactor = 2.5;
+                                    
+                                    appState.flashcards.push(card);
+                                    importedCount++;
+                                }
+                            });
+                        }
+                        
+                        // 保存数据并更新UI
+                        utils.saveToLocalStorage();
+                        ui.updateStatistics();
+                        ui.renderFlashcardsList();
+                        
+                        document.getElementById('loading').classList.add('hidden');
+                        alert(`成功导入 ${importedCount} 条数据！`);
+                    } catch (error) {
+                        console.error('JSON解析错误:', error);
+                        document.getElementById('loading').classList.add('hidden');
+                        alert('JSON文件格式错误，请检查文件内容！');
+                    }
+                };
+                reader.readAsText(file);
+            },
+            
+            // 导入TXT文件
+            importTxtFile: (file) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const content = e.target.result;
+                        const lines = content.split('\n');
+                        let importedCount = 0;
+                        let currentQuestion = null;
+                        let mode = 'question'; // question, options, answer, explanation, category
+                        
+                        lines.forEach(line => {
+                            line = line.trim();
+                            if (!line) return;
+                            
+                            // 检查模式标记
+                            if (line.startsWith('===QUESTION===')) {
+                                // 如果已有未完成的题目，先保存
+                                if (currentQuestion && currentQuestion.question && currentQuestion.options.length > 0) {
+                                    appState.questions.push(currentQuestion);
+                                    importedCount++;
+                                }
+                                
+                                // 创建新题目
+                                currentQuestion = {
+                                    id: utils.generateId(),
+                                    question: '',
+                                    options: [],
+                                    answer: '',
+                                    explanation: '',
+                                    category: '导入题目',
+                                    tags: [],
+                                    difficulty: 2,
+                                    createdAt: new Date().toISOString(),
+                                    isFavorite: false,
+                                    isWrong: false,
+                                    attemptCount: 0,
+                                    correctCount: 0
+                                };
+                                mode = 'question';
+                            } else if (line.startsWith('===OPTIONS===')) {
+                                mode = 'options';
+                            } else if (line.startsWith('===ANSWER===')) {
+                                mode = 'answer';
+                            } else if (line.startsWith('===EXPLANATION===')) {
+                                mode = 'explanation';
+                            } else if (line.startsWith('===CATEGORY===')) {
+                                mode = 'category';
+                            } else if (line.startsWith('===DIFFICULTY===')) {
+                                mode = 'difficulty';
+                            } else {
+                                // 根据当前模式处理内容
+                                switch (mode) {
+                                    case 'question':
+                                        currentQuestion.question += line + '\n';
+                                        break;
+                                    case 'options':
+                                        if (line) currentQuestion.options.push(line);
+                                        break;
+                                    case 'answer':
+                                        currentQuestion.answer = line;
+                                        // 设置答案索引
+                                        const answerIndex = currentQuestion.options.findIndex(opt => 
+                                            opt.trim().toLowerCase() === line.trim().toLowerCase() || 
+                                            opt.trim().startsWith(line.trim())
+                                        );
+                                        currentQuestion.answerIndex = answerIndex !== -1 ? answerIndex : 0;
+                                        break;
+                                    case 'explanation':
+                                        currentQuestion.explanation += line + '\n';
+                                        break;
+                                    case 'category':
+                                        currentQuestion.category = line;
+                                        break;
+                                    case 'difficulty':
+                                        const difficulty = parseInt(line);
+                                        if (!isNaN(difficulty) && difficulty >= 1 && difficulty <= 3) {
+                                            currentQuestion.difficulty = difficulty;
+                                        }
+                                        break;
+                                }
+                            }
+                        });
+                        
+                        // 保存最后一个题目
+                        if (currentQuestion && currentQuestion.question && currentQuestion.options.length > 0) {
+                            appState.questions.push(currentQuestion);
+                            importedCount++;
+                        }
+                        
+                        // 保存数据并更新UI
+                        utils.saveToLocalStorage();
+                        ui.updateStatistics();
+                        
+                        document.getElementById('loading').classList.add('hidden');
+                        alert(`成功导入 ${importedCount} 道题目！`);
+                    } catch (error) {
+                        console.error('TXT解析错误:', error);
+                        document.getElementById('loading').classList.add('hidden');
+                        alert('TXT文件格式错误，请检查文件内容！');
+                    }
+                };
+                reader.readAsText(file);
+            },
+            
+            // 导入PDF文件
+            importPdfFile: (file) => {
+                // 检查是否已加载PDF.js库
+                if (typeof pdfjsLib === 'undefined') {
+                    // 动态加载PDF.js库
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
+                    script.onload = () => {
+                        // 设置PDF.js工作器
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+                        ui.processPdfFile(file);
+                    };
+                    script.onerror = () => {
+                        document.getElementById('loading').classList.add('hidden');
+                        alert('加载PDF解析库失败，请稍后重试！');
+                    };
+                    document.head.appendChild(script);
+                } else {
+                    ui.processPdfFile(file);
+                }
+            },
+            
+            // 处理PDF文件内容
+            processPdfFile: (file) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = new Uint8Array(e.target.result);
+                    
+                    pdfjsLib.getDocument(data).promise.then(pdf => {
+                        let totalPages = pdf.numPages;
+                        let processedPages = 0;
+                        let extractedText = '';
+                        
+                        // 提取所有页面的文本
+                        const extractTextFromPage = (pageNum) => {
+                            pdf.getPage(pageNum).then(page => {
+                                return page.getTextContent();
+                            }).then(textContent => {
+                                const pageText = textContent.items.map(item => item.str).join(' ');
+                                extractedText += pageText + '\n\n';
+                                
+                                processedPages++;
+                                
+                                // 更新加载进度
+                                const progress = Math.round((processedPages / totalPages) * 100);
+                                document.querySelector('#loading p').textContent = `正在解析PDF (${progress}%)...`;
+                                
+                                if (processedPages < totalPages) {
+                                    extractTextFromPage(processedPages + 1);
+                                } else {
+                                    // 所有页面提取完成，开始解析题目
+                                    ui.parsePdfTextToQuestions(extractedText);
+                                }
+                            }).catch(error => {
+                                console.error('提取页面文本失败:', error);
+                                processedPages++;
+                                
+                                if (processedPages < totalPages) {
+                                    extractTextFromPage(processedPages + 1);
+                                } else {
+                                    ui.parsePdfTextToQuestions(extractedText);
+                                }
+                            });
+                        };
+                        
+                        // 开始提取第一页
+                        extractTextFromPage(1);
+                    }).catch(error => {
+                        console.error('解析PDF失败:', error);
+                        document.getElementById('loading').classList.add('hidden');
+                        alert('解析PDF文件失败，请检查文件是否损坏！');
+                    });
+                };
+                reader.readAsArrayBuffer(file);
+            },
+            
+            // 解析PDF文本为题目
+            parsePdfTextToQuestions: (text) => {
+                try {
+                    // 简单的题目解析逻辑，根据常见的题目格式进行匹配
+                    // 这里使用正则表达式匹配常见的题目格式
+                    const questionRegex = /(\d+\.\s+.*?)(?:\n\s*[A-Z]\.\s+.*?){2,}(?:\n\s*答案[:：]\s*([A-Z]).*?)?/gs;
+                    let match;
+                    let importedCount = 0;
+                    
+                    while ((match = questionRegex.exec(text)) !== null) {
+                        const fullMatch = match[0];
+                        const questionText = match[1].replace(/^\d+\.\s+/, '').trim();
+                        const answer = match[2] || '';
+                        
+                        // 提取选项
+                        const optionsRegex = /[A-Z]\.\s+(.*?)(?=\n\s*[A-Z]\.|$|\n\s*答案)/gs;
+                        const options = [];
+                        let optionMatch;
+                        
+                        while ((optionMatch = optionsRegex.exec(fullMatch)) !== null) {
+                            options.push(optionMatch[1].trim());
+                        }
+                        
+                        // 提取答案索引
+                        let answerIndex = 0;
+                        if (answer) {
+                            answerIndex = answer.charCodeAt(0) - 65; // A=0, B=1, etc.
+                        }
+                        
+                        // 创建题目对象
+                        if (questionText && options.length >= 2) {
+                            const newQuestion = {
+                                id: utils.generateId(),
+                                question: questionText,
+                                options: options,
+                                answer: answer ? options[answerIndex] : options[0],
+                                answerIndex: answerIndex,
+                                explanation: '',
+                                category: 'PDF导入',
+                                tags: [],
+                                difficulty: 2,
+                                createdAt: new Date().toISOString(),
+                                isFavorite: false,
+                                isWrong: false,
+                                attemptCount: 0,
+                                correctCount: 0
+                            };
+                            
+                            appState.questions.push(newQuestion);
+                            importedCount++;
+                        }
+                    }
+                    
+                    // 保存数据并更新UI
+                    utils.saveToLocalStorage();
+                    ui.updateStatistics();
+                    
+                    document.getElementById('loading').classList.add('hidden');
+                    document.querySelector('#loading p').textContent = '加载中...';
+                    
+                    if (importedCount > 0) {
+                        alert(`成功从PDF中提取 ${importedCount} 道题目！`);
+                    } else {
+                        alert('未能从PDF中提取到题目，请检查文件格式是否符合要求！');
+                    }
+                } catch (error) {
+                    console.error('解析PDF文本失败:', error);
+                    document.getElementById('loading').classList.add('hidden');
+                    document.querySelector('#loading p').textContent = '加载中...';
+                    alert('解析PDF文本失败，请稍后重试！');
+                }
+            }
+        };
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            ui.init();
+        });
+
+        // 页面卸载时保存学习时间
+        window.addEventListener('beforeunload', () => {
+            utils.stopStudyTimer();
+        });
+    </script>
+</body>
+</html>
